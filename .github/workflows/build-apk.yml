@@ -26,16 +26,26 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Configure Android SDK Location
         run: |
           mkdir -p ./android
-          echo "sdk.dir=/usr/local/lib/android/sdk" > ./android/local.properties
-          cat ./android/local.properties
+          if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
+            echo "sdk.dir=$ANDROID_HOME" > ./android/local.properties
+          elif [ -n "$ANDROID_SDK_ROOT" ] && [ -d "$ANDROID_SDK_ROOT" ]; then
+            echo "sdk.dir=$ANDROID_SDK_ROOT" > ./android/local.properties
+          elif [ -d "/usr/local/lib/android/sdk" ]; then
+            echo "sdk.dir=/usr/local/lib/android/sdk" > ./android/local.properties
+          fi
+          cat ./android/local.properties || true
+
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | sdkmanager --licenses 2>/dev/null || true
 
       - name: Install Web Dependencies
         run: npm install --legacy-peer-deps
@@ -52,8 +62,7 @@ jobs:
       - name: Build Android APK with Gradle
         working-directory: ./android
         env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2048m"
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8"
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Collect Built APK
