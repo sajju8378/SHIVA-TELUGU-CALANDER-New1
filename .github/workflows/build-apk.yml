@@ -21,15 +21,23 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK Packages & Licenses
+        run: |
+          yes | sdkmanager --licenses 2>/dev/null || true
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platforms;android-35" "build-tools;35.0.0" 2>/dev/null || true
 
       - name: Configure Android SDK Location
         run: |
@@ -42,10 +50,6 @@ jobs:
             echo "sdk.dir=/usr/local/lib/android/sdk" > ./android/local.properties
           fi
           cat ./android/local.properties || true
-
-      - name: Accept Android SDK Licenses
-        run: |
-          yes | sdkmanager --licenses 2>/dev/null || true
 
       - name: Install Web Dependencies
         run: npm install --legacy-peer-deps
